@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ResultadoPartida {
+  VITORIA
+  DERROTA
+  EMPATE
+}
+
+model Colega {
+  id        String     @id @default(uuid())
+  nome      String     @unique
+  partidas  Partida[]
+
+  @@map("colegas")
+}
+
+model Partida {
+  id               String              @id @default(uuid())
+  externalId       String?             @unique
+  timeCasa         String
+  rival            String
+  escudoTimeCasa   String?
+  escudoRival      String?
+  data             DateTime
+  campeonato       String
+  estadio          String
+  placarCasa       Int?
+  placarFora       Int?
+  resultado        ResultadoPartida
+
+  colegas          Colega[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("partidas")
+}
