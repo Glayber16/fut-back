@@ -13,45 +13,23 @@ export class ApiExternaService {
     };
   }
 
-  async getDadosTime(timeCasaNome: string, dataIso: string) {
+  async getDadosTime(nomeTime: string) {
     try {
-      const timeId = await this.getIdTime(timeCasaNome);
-
-      if (!timeId) {
-        this.logger.warn(`Time não encontrado na API: ${timeCasaNome}`);
-        return null;
-      }
-
-      const dataFormatada = dataIso.split('T')[0];
-
-      const response = await axios.get(`${this.baseUrl}/fixtures`, {
+      const response = await axios.get(`${this.baseUrl}/teams`, {
         headers: this.headers,
-        params: {
-          team: timeId,
-          date: dataFormatada,
-          timezone: 'America/Sao_Paulo',
-        },
+        params: { search: nomeTime },
       });
 
-      const jogos = response.data.response;
-
-      if (!jogos || jogos.length === 0) {
-        this.logger.warn(
-          `Nenhum jogo encontrado para ${timeCasaNome} em ${dataFormatada}`,
-        );
+      const times = response.data.response;
+      if (!times || times.length === 0) {
+        this.logger.warn(`Time não encontrado na API: ${nomeTime}`);
         return null;
       }
-
-      const jogo = jogos[0];
-
-      return {
-        escudoTimeCasa: jogo.teams.home.logo,
-        escudoRival: jogo.teams.away.logo,
-        data: jogo.fixture.date,
-      };
-    } catch (error) {
+      return times[0].team.logo;
+    } 
+    catch (error) {
       this.logger.error(`Erro ao consultar API externa: ${error.message}`);
-      return null;
+      return null;  
     }
   }
 

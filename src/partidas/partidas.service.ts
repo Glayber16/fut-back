@@ -12,40 +12,36 @@ export class PartidasService {
   ) {}
 
   async create(createPartidaDto: CreatePartidaDto) {
-    let dadosApi = {};
-    let diaJogo = createPartidaDto.data;
-    if (createPartidaDto.timeCasa && createPartidaDto.data) {
-      const result = await this.apiExterna.getDadosTime(
-        createPartidaDto.timeCasa,
-        createPartidaDto.data.toString(),
-      );
-      if (result) {
-        dadosApi = {
-          escudoTimeCasa: result.escudoTimeCasa,
-          escudoRival: result.escudoRival,
-        };
-        diaJogo = result.data;
-      }
-    }
-
-    const { colegasNome, data, ...dadosDoJogo } = createPartidaDto;
-
-    return this.prisma.partida.create({
-      data: {
-        ...dadosDoJogo,
-        ...dadosApi,
-        data: new Date(diaJogo),
-        colegas: {
-          connectOrCreate: colegasNome?.map((nome) => ({
-            where: { nome: nome },
-            create: { nome: nome },
-          })),
-        },
-      },
-
-      include: { colegas: true },
-    });
+  let escudoTimeCasa = "";
+  let escudoRival = "";
+  if (createPartidaDto.timeCasa) {
+    const logo = await this.apiExterna.getDadosTime(createPartidaDto.timeCasa);
+    if (logo) escudoTimeCasa = logo;
   }
+    if (createPartidaDto.rival) {
+      const logo = await this.apiExterna.getDadosTime(createPartidaDto.rival);
+      if (logo) escudoRival = logo;
+    }
+  
+
+  const { colegasNome, data, ...dadosDoJogo } = createPartidaDto;
+
+  return this.prisma.partida.create({
+    data: {
+      ...dadosDoJogo,
+        escudoTimeCasa,
+        escudoRival,
+      data: new Date(data),
+      colegas: {
+        connectOrCreate: colegasNome?.map((nome) => ({
+          where: { nome },
+          create: { nome },
+        })),
+      },
+    },
+    include: { colegas: true },
+  });
+}
 
   async findAll() {
     return this.prisma.partida.findMany({
@@ -65,5 +61,37 @@ export class PartidasService {
     return this.prisma.partida.delete({
       where: { id },
     });
+  }
+
+  async getEstatisticas() {
+    const totalPorResultado = await this.prisma.partida.groupBy({
+      by: ['resultado'],
+      _count: {
+        resultado: true,
+      },
+    });
+    const colegasMaisPresentes = await this.prisma.colega.findMany({
+      include: {
+        _count: {
+          select: { partidas: true }, 
+        },
+      },
+      orderBy: {
+        partidas: {
+          _count: 'desc', 
+        },
+      },
+      });
+    return {
+      totalJogos: totalPorResultado.reduce((acc, item) => acc + item._count.resultado, 0),
+      resultados: totalPorResultado.map((item) => ({
+        tipo: item.resultado,
+        quantidade: item._count.resultado,
+      })),
+      topColegas: colegasMaisPresentes.map((c) => ({
+        nome: c.nome,
+        jogos: c._count.partidas,
+      })), 
+    };
   }
 }

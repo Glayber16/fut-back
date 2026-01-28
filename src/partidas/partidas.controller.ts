@@ -25,6 +25,10 @@ export class PartidasController {
   findAll() {
     return this.partidasService.findAll();
   }
+  @Get('estatisticas')
+  getStats() {
+    return this.partidasService.getEstatisticas();
+  }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
