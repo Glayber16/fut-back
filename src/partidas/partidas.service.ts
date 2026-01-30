@@ -70,11 +70,19 @@ export class PartidasService {
         resultado: true,
       },
     });
-    const colegasMaisPresentes = await this.prisma.colega.findMany({
+
+    const jogosSozinho = await this.prisma.partida.count({
+      where: {
+        colegas: {
+          none: {} 
+        }
+      }
+    });
+    const colegasDados = await this.prisma.colega.findMany({
       include: {
-        _count: {
-          select: { partidas: true }, 
-        },
+        partidas: {
+          select: {resultado:true},
+        }
       },
       orderBy: {
         partidas: {
@@ -82,16 +90,36 @@ export class PartidasService {
         },
       },
       });
+
+      const aproveitamento = colegasDados.map((colega) => {
+        let vitorias = 0;
+        let empates = 0;
+        let derrotas = 0;
+        colega.partidas.forEach((partida) => {
+          if(partida.resultado === 'VITORIA') vitorias++;
+          else if(partida.resultado === 'EMPATE') empates++;
+          else if(partida.resultado === 'DERROTA') derrotas++;
+        })
+
+        return {
+          nome: colega.nome,
+          jogos: colega.partidas.length,
+          vitorias,
+          empates,
+          derrotas,
+        }
+      });
+
+
+
     return {
       totalJogos: totalPorResultado.reduce((acc, item) => acc + item._count.resultado, 0),
       resultados: totalPorResultado.map((item) => ({
         tipo: item.resultado,
         quantidade: item._count.resultado,
       })),
-      topColegas: colegasMaisPresentes.map((c) => ({
-        nome: c.nome,
-        jogos: c._count.partidas,
-      })), 
+      topColegas: aproveitamento,
+      jogosSozinho: jogosSozinho,
     };
   }
 }
