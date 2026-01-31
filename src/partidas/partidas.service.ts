@@ -12,36 +12,37 @@ export class PartidasService {
   ) {}
 
   async create(createPartidaDto: CreatePartidaDto) {
-  let escudoTimeCasa = "";
-  let escudoRival = "";
-  if (createPartidaDto.timeCasa) {
-    const logo = await this.apiExterna.getDadosTime(createPartidaDto.timeCasa);
-    if (logo) escudoTimeCasa = logo;
-  }
+    let escudoTimeCasa = '';
+    let escudoRival = '';
+    if (createPartidaDto.timeCasa) {
+      const logo = await this.apiExterna.getDadosTime(
+        createPartidaDto.timeCasa,
+      );
+      if (logo) escudoTimeCasa = logo;
+    }
     if (createPartidaDto.rival) {
       const logo = await this.apiExterna.getDadosTime(createPartidaDto.rival);
       if (logo) escudoRival = logo;
     }
-  
 
-  const { colegasNome, data, ...dadosDoJogo } = createPartidaDto;
+    const { colegasNome, data, ...dadosDoJogo } = createPartidaDto;
 
-  return this.prisma.partida.create({
-    data: {
-      ...dadosDoJogo,
+    return this.prisma.partida.create({
+      data: {
+        ...dadosDoJogo,
         escudoTimeCasa,
         escudoRival,
-      data: new Date(data),
-      colegas: {
-        connectOrCreate: colegasNome?.map((nome) => ({
-          where: { nome },
-          create: { nome },
-        })),
+        data: new Date(data),
+        colegas: {
+          connectOrCreate: colegasNome?.map((nome) => ({
+            where: { nome },
+            create: { nome },
+          })),
+        },
       },
-    },
-    include: { colegas: true },
-  });
-}
+      include: { colegas: true },
+    });
+  }
 
   async findAll() {
     return this.prisma.partida.findMany({
@@ -74,46 +75,47 @@ export class PartidasService {
     const jogosSozinho = await this.prisma.partida.count({
       where: {
         colegas: {
-          none: {} 
-        }
-      }
+          none: {},
+        },
+      },
     });
     const colegasDados = await this.prisma.colega.findMany({
       include: {
         partidas: {
-          select: {resultado:true},
-        }
+          select: { resultado: true },
+        },
       },
       orderBy: {
         partidas: {
-          _count: 'desc', 
+          _count: 'desc',
         },
       },
+    });
+
+    const aproveitamento = colegasDados.map((colega) => {
+      let vitorias = 0;
+      let empates = 0;
+      let derrotas = 0;
+      colega.partidas.forEach((partida) => {
+        if (partida.resultado === 'VITORIA') vitorias++;
+        else if (partida.resultado === 'EMPATE') empates++;
+        else if (partida.resultado === 'DERROTA') derrotas++;
       });
 
-      const aproveitamento = colegasDados.map((colega) => {
-        let vitorias = 0;
-        let empates = 0;
-        let derrotas = 0;
-        colega.partidas.forEach((partida) => {
-          if(partida.resultado === 'VITORIA') vitorias++;
-          else if(partida.resultado === 'EMPATE') empates++;
-          else if(partida.resultado === 'DERROTA') derrotas++;
-        })
-
-        return {
-          nome: colega.nome,
-          jogos: colega.partidas.length,
-          vitorias,
-          empates,
-          derrotas,
-        }
-      });
-
-
+      return {
+        nome: colega.nome,
+        jogos: colega.partidas.length,
+        vitorias,
+        empates,
+        derrotas,
+      };
+    });
 
     return {
-      totalJogos: totalPorResultado.reduce((acc, item) => acc + item._count.resultado, 0),
+      totalJogos: totalPorResultado.reduce(
+        (acc, item) => acc + item._count.resultado,
+        0,
+      ),
       resultados: totalPorResultado.map((item) => ({
         tipo: item.resultado,
         quantidade: item._count.resultado,

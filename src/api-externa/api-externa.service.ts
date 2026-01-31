@@ -26,10 +26,9 @@ export class ApiExternaService {
         return null;
       }
       return times[0].team.logo;
-    } 
-    catch (error) {
+    } catch (error) {
       this.logger.error(`Erro ao consultar API externa: ${error.message}`);
-      return null;  
+      return null;
     }
   }
 

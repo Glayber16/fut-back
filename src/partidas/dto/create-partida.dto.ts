@@ -6,8 +6,6 @@ export enum ResultadoPartida {
   EMPATE = 'EMPATE',
 }
 
-
-
 export class CreatePartidaDto {
   @IsString()
   timeCasa: string;
