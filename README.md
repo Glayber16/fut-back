@@ -17,4 +17,4 @@ Total de jogos, vitórias, empates e derrotas.
 
 
 
-🔗 **Link do Front-end:** [https://github.com/Glayber16/fut-front](https://github.com/Glayber16/fut-front)
+**Link do Front-end:** [https://github.com/Glayber16/fut-front](https://github.com/Glayber16/fut-front)
